@@ -1,0 +1,186 @@
+#!/usr/local/bin/perl -w
+
+use open ':locale';
+use strict;
+use utf8;
+use warnings;
+
+=encoding utf8
+
+=head1 NAME
+
+Brettspielnetz-Alarm - überwachen, ob Du auf brettspielnetz.de am Zu bist
+
+=head1 VERSION
+
+0.01
+
+=cut
+
+our $VERSION = '0.01';
+
+use Encode qw(encode);
+use Getopt::Long qw(GetOptions);
+use List::Util qw(first);
+use WWW::Brettspielnetz;
+
+require encoding;
+my $encoding = encoding::_get_locale_encoding();
+
+my @Ignoriere;
+GetOptions(
+    'abfragen=i' => \( my $Abfragen = -1 ),    # unendlich
+    'einzeln'    => \my $Einzeln,
+    'hilfe|help' => sub {
+        exec perldoc => -F => $0 or die "Fehler beim Aufruf von perldoc: $!\n";
+    },
+    'intervall=i' => \( my $Intervall = 42 ),
+    'ignoriere=s' => sub {
+        my ( $option, $wert ) = @_;
+        push @Ignoriere, {
+            map {
+                /^(.*?)=(.*)$/
+                  or die "Ungültiger Wert bei Option -$option: $wert\n";
+                $1 => $2;
+              }
+              split /,/,
+            $wert
+        };
+    },
+    'verbose+' => \my $Verbos,
+) or exit 1;
+
+sub aufzaehlung {
+    return "@_" if @_ < 2;
+    join ' und ', join( ', ', @_[ 0 .. $#_ - 1 ] ), $_[-1];
+}
+
+sub spiel_filter {
+    my $spiel = shift;
+  Filter: for my $filter (@_) {
+        keys %$filter;    # Iterator zurücksetzen
+        while ( my ( $attr, $wert ) = each %$filter ) {
+
+            # String-Kontext erzwingen für WWW::Bretspielnetz::Gegner-Overload:
+            next Filter if '' . $spiel->$attr ne $wert;
+        }
+        return 1;
+    }
+    '';
+}
+
+my %zuletzt;
+for ( my $abfragen = 0 ; $abfragen++ != $Abfragen ; ) {
+    sleep $Intervall if $abfragen > 1;
+
+    my @am_zug = eval { WWW::Brettspielnetz->new->am_zug };
+    if ( length $@ ) {
+        warn localtime() . " $@\n";
+        next;
+    }
+    @am_zug = grep !spiel_filter( $_, @Ignoriere ), @am_zug;
+
+    my $am_zug = 'Du bist ';
+    unless (@am_zug) { $am_zug .= 'nicht' }
+    elsif ($Einzeln) {
+        $am_zug .=
+          aufzaehlung( map 'in ' . $_->name . ' gegen ' . $_->gegner, @am_zug );
+    }
+    else {    # gleiche Spiele zusammenfassen
+        my %am_zug;
+        ++$am_zug{ $_->name }{ $_->gegner } for @am_zug;
+        $am_zug .= aufzaehlung(
+            map {
+                my $spiel = $am_zug{$_};
+                "in $_ "
+                  . aufzaehlung(
+                    map +( $spiel->{$_} > 1 && "$spiel->{$_}mal " )
+                      . "gegen $_",
+                    sort keys %$spiel
+                  )
+              } sort keys %am_zug
+        );
+    }
+    $am_zug .= ' am Zug.';
+    print localtime() . " $am_zug\n" if $Verbos;
+
+    next unless first { !exists $zuletzt{ $_->nr . '/' . $_->zugnr } } @am_zug;
+    %zuletzt = map +( $_->nr . '/' . $_->zugnr => undef ), @am_zug;
+    if (@ARGV) { system @ARGV, encode( $encoding, $am_zug ) }
+    else       { print "$am_zug\n" }
+}
+
+__END__
+=head1 SYNOPSE
+
+    Brettspielnetz-Alarm -ignoriere name=Schach,gegner=mir \
+                         -ignoriere nr=4711                \
+                         -verbos                           \
+                         say
+
+=head1 BESCHREIBUNG
+
+Das Programm überwacht regelmäßig, ob Du auf brettspielnetz.de am Zug bist,
+und weist Dich ggf. darauf hin.
+
+Dabei kanne es optional eine Nachricht an ein externes Programm übergeben,
+beispielsweise ein Sprachausgabeprogramm.
+Dazu muss dieses Programm und müssen ggf. weitere Argumente dafür einfach auf
+der Kommandozeile angegeben werden.
+Brettspielnetz-Alarm ruft das Programm dann automagisch auf, sobald Du in
+irgendeinem Spiel neu am Zug bist, und übergibt ihm eine Textnachricht, die
+Deine aktuellen "Du am Zug"-Spiele zusammenfasst, als zusätzliches Argument.
+
+Der Beispielaufruf aus der L</SYNOPSE> könnte also etwa in folgendem
+L<System|perlfunc/system>aufruf resultieren:
+
+    say 'Du bist in En Garde gegen Benutzer1 und gegen Benutzer2,
+         in Halali gegen Benutzer3, gegen Benutzer4 und zweimal gegen Benutzer5,
+         in Rosenkönig gegen Benutzer6, gegen Benutzer7 und gegen Benutzer8,
+	 in Rummy gegen Benutzer9 und in Ur gegen Benutzer6 am Zug.'
+
+Wird auf der Kommandozeile kein Programm angegeben, so gibt Brettspielnetz-Alarm
+die Meldungen auf die Standardausgabe aus.
+
+=head1 OPTIONEN
+
+=over 4
+
+=item -abfragen
+
+Anzahl der durchzuführenden Überwachungen.
+Default sind unendlich viele (C<-1>).
+
+=item -intervall Sekunden
+
+zur Festlegung der Überwachungshäufigkeit.
+Die Angabe bezieht sich dabei auf die Zeit I<zwischen> zwei Überwachungen,
+d. h. die für die Durchführung der Überwachung benötigte Zeit kommt hinzu.
+Default sind C<42> Sekunden.
+
+=item -ignoriere Attribut1=Wert,Attribut2=Wert,...
+
+um bestimmte Spiele, bei denen Du (möglicherweise) am Zug bist, zu ignorieren.
+Ein Spiel wird dabei ignoriert, wenn alle im Rahmen I<eines> Aufrufs dieser
+Option übergebenen Attribute übereinstimmen.
+Zu den möglichen Attributen siehe L<WWW::Brettspielnetz::Spiel>.
+
+=item -einzeln
+
+um die Spiele in der Meldung nicht (wie im obigen Beispiel) zusammenfassen
+sondern alle einzeln aufzählen zu lassen.
+
+=item -verbos
+
+gibt zusätzlich nach jeder Überwachung einen Zeitstempel und das Ergebnis auf
+die Standardausgabe aus, also auch, wenn keine neuen Spiele hinzugekommen sind.
+
+=item -hilfe
+
+um (nur) diese Dokumentation anzeigen zu lassen
+
+=back
+
+=head1 AUTOR
+    
+Martin H. Sluka, <fany@cpan.org>
