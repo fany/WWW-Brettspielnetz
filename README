@@ -9,9 +9,11 @@ To install this module, run the following commands:
 
 SUPPORT AND DOCUMENTATION
 
-After installing, you can find documentation for this module with the
-perldoc command.
+After installing, you can find documentation (in German) for the tool
+Brettspielnetz-Alarm and the module WWW::Brettspielnetz with the perldoc
+command.
 
+    perldoc Brettspielnetz-Alarm
     perldoc WWW::Brettspielnetz
 
 LICENSE AND COPYRIGHT
