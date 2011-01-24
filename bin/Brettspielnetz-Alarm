@@ -17,11 +17,11 @@ Brettspielnetz-Alarm - überwachen, ob Du auf brettspielnetz.de am Zu bist
 
 =cut
 
-our $VERSION = '0.01';
+our $VERSION = '0.10';
 
 use Encode qw(encode);
 use Getopt::Long qw(GetOptions);
-use List::Util qw(first);
+use List::Util qw(first min);
 use WWW::Brettspielnetz;
 
 require encoding;
@@ -47,7 +47,9 @@ GetOptions(
             $wert
         };
     },
-    'verbose+' => \my $Verbos,
+    'min-intervall=s' => \my $MinIntervall,
+    'verbose+'        => \my $Verbos,
+    'verzoegerung=i'  => \( my $Verzoegerung = 1 ),
 ) or exit 1;
 
 sub aufzaehlung {
@@ -70,8 +72,10 @@ sub spiel_filter {
 }
 
 my %zuletzt;
+my $intervall = $Intervall;
 for ( my $abfragen = 0 ; $abfragen++ != $Abfragen ; ) {
-    sleep $Intervall if $abfragen > 1;
+    sleep $intervall if $abfragen > 1;
+    $intervall = min( $Intervall, $intervall + $Verzoegerung );
 
     my @am_zug = eval { WWW::Brettspielnetz->new->am_zug };
     if ( length $@ ) {
@@ -105,16 +109,21 @@ for ( my $abfragen = 0 ; $abfragen++ != $Abfragen ; ) {
     print localtime() . " $am_zug\n" if $Verbos;
 
     next unless first { !exists $zuletzt{ $_->nr . '/' . $_->zugnr } } @am_zug;
+
+    $intervall = $MinIntervall // $Intervall;
     %zuletzt = map +( $_->nr . '/' . $_->zugnr => undef ), @am_zug;
+
     if (@ARGV) { system @ARGV, encode( $encoding, $am_zug ) }
     else       { print "$am_zug\n" }
 }
 
 __END__
+
 =head1 SYNOPSE
 
     Brettspielnetz-Alarm -ignoriere name=Schach,gegner=mir \
                          -ignoriere nr=4711                \
+                         -min-intervall 14                 \
                          -verbos                           \
                          say
 
@@ -157,6 +166,19 @@ zur Festlegung der Überwachungshäufigkeit.
 Die Angabe bezieht sich dabei auf die Zeit I<zwischen> zwei Überwachungen,
 d. h. die für die Durchführung der Überwachung benötigte Zeit kommt hinzu.
 Default sind C<42> Sekunden.
+
+=item -min-intervall Sekunden
+
+zur Festlegung der maximalen Überwachungshäufigkeit.
+Wird dieser Wert gesetzt, so wird die Pause zwischen zwei Überwachungen
+automagisch auf diesen verkürzt, sobald Du irgendwo neu am Zug bist.
+
+=item -verzoegerung Sekunden
+
+Dieser Wert wird nach jeder Überwachung, durch die keine neuen
+Zugmöglichkeiten gefunden wurden, zur Wartezeit zwischen zwei Überwachungen
+addiert, bis das maximale L<Intervall|/-intervall Sekunden> erreicht ist.
+Default: C<1>
 
 =item -ignoriere Attribut1=Wert,Attribut2=Wert,...
 
