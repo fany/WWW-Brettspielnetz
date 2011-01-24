@@ -1,5 +1,6 @@
 #!/usr/local/bin/perl -w
 
+use 5.010;
 use open ':locale';
 use strict;
 use utf8;
@@ -17,7 +18,7 @@ Brettspielnetz-Alarm - überwachen, ob Du auf brettspielnetz.de am Zu bist
 
 =cut
 
-our $VERSION = '0.10';
+our $VERSION = '0.11';
 
 use Encode qw(encode);
 use Getopt::Long qw(GetOptions);
@@ -48,7 +49,7 @@ GetOptions(
         };
     },
     'min-intervall=s' => \my $MinIntervall,
-    'verbose+'        => \my $Verbos,
+    'verbose+'        => \( my $Verbos = 0 ),
     'verzoegerung=i'  => \( my $Verzoegerung = 1 ),
 ) or exit 1;
 
@@ -71,11 +72,22 @@ sub spiel_filter {
     '';
 }
 
+sub verbos {
+    return if $Verbos < shift;
+    say localtime() . " @_";
+}
+
 my %zuletzt;
 my $intervall = $Intervall;
 for ( my $abfragen = 0 ; $abfragen++ != $Abfragen ; ) {
-    sleep $intervall if $abfragen > 1;
-    $intervall = min( $Intervall, $intervall + $Verzoegerung );
+
+    if ( $abfragen > 1 ) {
+        verbos( 2 => "Schlafe $intervall Sekunde"
+              . ( $intervall != 1 && 'n' )
+              . '.' );
+        sleep $intervall;
+        $intervall = min( $Intervall, $intervall + $Verzoegerung );
+    }
 
     my @am_zug = eval { WWW::Brettspielnetz->new->am_zug };
     if ( length $@ ) {
@@ -106,7 +118,7 @@ for ( my $abfragen = 0 ; $abfragen++ != $Abfragen ; ) {
         );
     }
     $am_zug .= ' am Zug.';
-    print localtime() . " $am_zug\n" if $Verbos;
+    verbos( 1 => $am_zug );
 
     next unless first { !exists $zuletzt{ $_->nr . '/' . $_->zugnr } } @am_zug;
 
@@ -114,7 +126,7 @@ for ( my $abfragen = 0 ; $abfragen++ != $Abfragen ; ) {
     %zuletzt = map +( $_->nr . '/' . $_->zugnr => undef ), @am_zug;
 
     if (@ARGV) { system @ARGV, encode( $encoding, $am_zug ) }
-    else       { print "$am_zug\n" }
+    else       { say $am_zug }
 }
 
 __END__
@@ -196,6 +208,8 @@ sondern alle einzeln aufzählen zu lassen.
 
 gibt zusätzlich nach jeder Überwachung einen Zeitstempel und das Ergebnis auf
 die Standardausgabe aus, also auch, wenn keine neuen Spiele hinzugekommen sind.
+Bei doppelter Verwendung der Option werden außerdem Informationen zur Länge der
+Pausen zwischen den Überwachungen angezeigt.
 
 =item -hilfe
 
