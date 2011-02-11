@@ -20,6 +20,7 @@ WriteMakefile(
         'Readonly'         => 0,
         'Test::More'       => 0,
         'URI'              => 0,
+        'URI::Escape'      => 0,
         'WWW::Mechanize'   => 0,
         'Web::Scraper'     => 0,
         'namespace::clean' => 0,

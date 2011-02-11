@@ -16,11 +16,13 @@ Version 0.01
 
 =cut
 
-our $VERSION = '0.01';
+our $VERSION = '0.12';
 
+use Encode qw(decode);
 use Net::Netrc;
 use Readonly;
 use URI;
+use URI::Escape qw(uri_unescape);
 use Web::Scraper qw(process scrape);
 use WWW::Brettspielnetz::Spiel;
 use base 'WWW::Mechanize';
@@ -106,10 +108,11 @@ Readonly::Scalar my $URI_AM_ZUG => '/ajax/gameslist1.php';
 
             $spiel{gegner}{uri} = URI->new_abs( $_->{uri_gegner}, $self->uri );
 
-            ( $spiel{gegner}{username} ) =
-              $_->{uri_gegner} =~ /username=([^=]+)/
+            $_->{uri_gegner} =~ /username=([^=]+)/
               or die $self->_errmsg( 'Unbekannte Mitspieler-URI',
                 $_->{uri_gegner} );
+            $spiel{gegner}{username} =
+              decode( $self->res->content_charset, uri_unescape($1) );
             die $self->_errmsg( 'Inkonsistente Gegner-Daten ("'
                   . $spiel{gegner}{username}
                   . '" vs. "'

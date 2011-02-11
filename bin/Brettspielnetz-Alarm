@@ -18,7 +18,7 @@ Brettspielnetz-Alarm - überwachen, ob Du auf brettspielnetz.de am Zu bist
 
 =cut
 
-our $VERSION = '0.11';
+our $VERSION = '0.12';
 
 use Encode qw(encode);
 use Getopt::Long qw(GetOptions);

@@ -1,5 +1,8 @@
 Revision history for WWW-Brettspielnetz
 
+0.12	2011-02-11
+	Fixed problem with usernames that contain umlauts.
+
 0.01    2011-01-21
         First version, released on an unsuspecting world.
 
