@@ -12,11 +12,11 @@ WWW::Brettspielnetz - Web-Client für L<http://www.brettspielnetz.de>
 
 =head1 VERSION
 
-Version 0.01
+Version 0.13
 
 =cut
 
-our $VERSION = '0.12';
+our $VERSION = '0.13';
 
 use Encode qw(decode);
 use Net::Netrc;
@@ -106,13 +106,19 @@ Readonly::Scalar my $URI_AM_ZUG => '/ajax/gameslist1.php';
 
             $spiel{uri} = URI->new_abs( $_->{uri_spiel}, $self->uri );
 
-            $spiel{gegner}{uri} = URI->new_abs( $_->{uri_gegner}, $self->uri );
+            {
+                my %param =
+                  ( $spiel{gegner}{uri} =
+                      URI->new_abs( $_->{uri_gegner}, $self->uri ) )
+                  ->query_form;
+                die "Username in URI $spiel{gegner}{uri} nicht gefunden.\n"
+                  unless defined $param{username};
+                $spiel{gegner}{username} =
+                  decode( $self->res->content_charset, $param{username} )
+                  or die
+                  "Username in URI $spiel{gegner}{uri} nicht gefunden.\n";
+            }
 
-            $_->{uri_gegner} =~ /username=([^=]+)/
-              or die $self->_errmsg( 'Unbekannte Mitspieler-URI',
-                $_->{uri_gegner} );
-            $spiel{gegner}{username} =
-              decode( $self->res->content_charset, uri_unescape($1) );
             die $self->_errmsg( 'Inkonsistente Gegner-Daten ("'
                   . $spiel{gegner}{username}
                   . '" vs. "'
