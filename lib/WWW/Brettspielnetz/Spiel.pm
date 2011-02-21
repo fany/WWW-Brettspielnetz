@@ -16,7 +16,7 @@ Version 0.01
 
 =cut
 
-our $VERSION = '0.01';
+our $VERSION = '0.14';
 
 use Any::Moose;
 use Any::Moose '::Util::TypeConstraints';
@@ -24,8 +24,25 @@ use URI;
 use WWW::Brettspielnetz::Mitspieler;
 use namespace::clean -except => 'meta';
 
+use constant Abk2Name => {
+    'Carc. - Burg' => 'Carcassonne - Die Burg',
+    'Käsekäst.'    => 'Käsekästchen',
+    'Kodekn.'      => 'Kodeknacker',
+    'Schiffe v.'   => 'Schiffe versenken',
+    'Würfelsp.'    => 'Würfelspiel',
+};
+
 subtype __PACKAGE__ . '::URI' => as class_type('URI');
 coerce __PACKAGE__ . '::URI' => from Str => via sub { URI->new(shift) };
+
+subtype __PACKAGE__ . '::Name' => as 'Str' => where { !exists Abk2Name->{$_} };
+coerce __PACKAGE__ . '::Name' => from 'Str' => via { Abk2Name->{$_} };
+
+has 'bar' => (
+    isa    => 'ModStr',
+    is     => 'rw',
+    coerce => 1,
+);
 
 has gegner => (
     is     => 'ro',
@@ -35,8 +52,9 @@ has gegner => (
 
 # Könnte man evtl. zu einem eigenen Objekttyp ausbauen:
 has name => (
-    is  => 'ro',
-    isa => 'Str',
+    is     => 'ro',
+    isa    => __PACKAGE__ . '::Name',
+    coerce => 1,
 );
 
 has nr => (

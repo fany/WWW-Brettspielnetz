@@ -5,7 +5,7 @@ use ExtUtils::MakeMaker;
 WriteMakefile(
     NAME          => 'WWW::Brettspielnetz',
     AUTHOR        => q{Martin H. Sluka <fany@cpan.org>},
-    VERSION       => '0.13',
+    VERSION       => '0.14',
     ABSTRACT_FROM => 'lib/WWW/Brettspielnetz.pm',
     ( $ExtUtils::MakeMaker::VERSION >= 6.3002
         ? ( 'LICENSE' => 'perl' )
