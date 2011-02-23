@@ -12,7 +12,7 @@ WWW::Brettspielnetz::Spiel - repräsentiert ein Spiel auf brettspielnetz.de
 
 =head1 VERSION
 
-Version 0.01
+Version 0.15
 
 =cut
 
@@ -84,7 +84,7 @@ has zugnr => (
 );
 
 __PACKAGE__->meta->make_immutable;
-no Moose;
+no Any::Moose;
 
 1;
 

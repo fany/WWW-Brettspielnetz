@@ -12,7 +12,7 @@ WWW::Brettspielnetz::Mitspieler - repräsentiert einen Spieler auf brettspielnet
 
 =head1 VERSION
 
-Version 0.01
+Version 0.15
 
 =cut
 
@@ -46,7 +46,7 @@ has username => (
 );
 
 __PACKAGE__->meta->make_immutable;
-no Moose;
+no Any::Moose;
 
 1;
 
