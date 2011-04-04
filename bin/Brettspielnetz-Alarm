@@ -12,21 +12,17 @@ use warnings;
 
 Brettspielnetz-Alarm - überwachen, ob Du auf brettspielnetz.de am Zu bist
 
-=head1 VERSION
-
-0.01
-
 =cut
 
-our $VERSION = '0.12';
-
-use Encode qw(encode);
+use Encode qw(decode encode);
 use Getopt::Long qw(GetOptions);
 use List::Util qw(first min);
 use WWW::Brettspielnetz;
 
 require encoding;
 my $encoding = encoding::_get_locale_encoding();
+
+@ARGV = map decode( $encoding, $_ ), @ARGV;
 
 my @Ignoriere;
 GetOptions(
