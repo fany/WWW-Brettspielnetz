@@ -127,10 +127,11 @@ Readonly::Scalar my $URI_AM_ZUG => '/ajax/gameslist1.php';
                   . $spiel{nr} )
               if "$spiel{gegner}{username} " ne $_->{td}[1];
 
+            utf8::upgrade( $_->{td}[2] );
             ( $spiel{name}, my $anzahl, my $einheit, my $ow, $spiel{zugnr} ) =
               $_->{td}[2] =~ /
                   ^
-                  \ ?
+                  \s*
                   (.*?)
                   \ \(
                   (\d+)
@@ -147,7 +148,6 @@ Readonly::Scalar my $URI_AM_ZUG => '/ajax/gameslist1.php';
                   . $_->{td}[2]
                   . '") bei Spiel '
                   . $spiel{nr} );
-
             $spiel{ow} = defined $ow;
 
             $spiel{timeout} = $time + $anzahl * $Faktor{$einheit};
