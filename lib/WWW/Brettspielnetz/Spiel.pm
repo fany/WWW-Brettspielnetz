@@ -33,7 +33,7 @@ use constant Abk2Name => {
 };
 
 subtype __PACKAGE__ . '::URI' => as class_type('URI');
-coerce __PACKAGE__ . '::URI' => from Str => via sub { URI->new(shift) };
+coerce __PACKAGE__ . '::URI' => from Str => via { URI->new(shift) };
 
 subtype __PACKAGE__ . '::Name' => as 'Str' => where { !exists Abk2Name->{$_} };
 coerce __PACKAGE__ . '::Name' => from 'Str' => via { Abk2Name->{$_} };
