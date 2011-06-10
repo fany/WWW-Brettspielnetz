@@ -1,5 +1,8 @@
 Revision history for WWW-Brettspielnetz
 
+0.21	2011-06-10
+	Web-Session nur nach Fehlern neu aufbauen
+
 0.20	2011-06-10
 	„-ignoriere ''“ implementiert
 
@@ -9,6 +12,7 @@ Revision history for WWW-Brettspielnetz
 0.17	2011-04-10
 	Bugfix Wegfiltern von Whitespace bei Turnier- und Meisterschaftsspielen
 	(dadurch Bugfix für „-ignoriere name=…“ bei solchen Spielen)
+
 0.16	2011-04-04
 	Dekodierung der Kommandozeile bei Brettspielnetz-Alarm eingebaut
 	(dadurch Umlautprobleme bei -ignoriere gelöst)

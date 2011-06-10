@@ -78,6 +78,7 @@ sub verbos {
 
 my %zuletzt;
 my $intervall = $Intervall;
+my $bsn;
 for ( my $abfragen = 0 ; $abfragen++ != $Abfragen ; ) {
 
     if ( $abfragen > 1 ) {
@@ -88,9 +89,10 @@ for ( my $abfragen = 0 ; $abfragen++ != $Abfragen ; ) {
         $intervall = min( $Intervall, $intervall + $Verzoegerung );
     }
 
-    my @am_zug = eval { WWW::Brettspielnetz->new->am_zug };
+    my @am_zug = eval { ( $bsn //= WWW::Brettspielnetz->new )->am_zug };
     if ( length $@ ) {
         warn localtime() . " $@\n";
+        undef $bsn;
         next;
     }
 
