@@ -24,7 +24,7 @@ my $encoding = encoding::_get_locale_encoding();
 
 @ARGV = map decode( $encoding, $_ ), @ARGV;
 
-my @Ignoriere;
+my ( @Ignoriere, $IgnoriereAktuelle );
 GetOptions(
     'abfragen=i' => \( my $Abfragen = -1 ),    # unendlich
     'einzeln'    => \my $Einzeln,
@@ -34,15 +34,18 @@ GetOptions(
     'intervall=i' => \( my $Intervall = 42 ),
     'ignoriere=s' => sub {
         my ( $option, $wert ) = @_;
-        push @Ignoriere, {
-            map {
-                /^(.*?)=(.*)$/
-                  or die "Ungültiger Wert bei Option -$option: $wert\n";
-                $1 => $2;
-              }
-              split /,/,
-            $wert
-        };
+        if ( $wert eq '' ) { $IgnoriereAktuelle = 1 }
+        else {
+            push @Ignoriere, {
+                map {
+                    /^(.*?)=(.*)$/
+                      or die "Ungültiger Wert bei Option -$option: $wert\n";
+                    $1 => $2;
+                  }
+                  split /,/,
+                $wert
+            };
+        }
     },
     'min-intervall=s' => \my $MinIntervall,
     'verbose+'        => \( my $Verbos = 0 ),
@@ -90,6 +93,12 @@ for ( my $abfragen = 0 ; $abfragen++ != $Abfragen ; ) {
         warn localtime() . " $@\n";
         next;
     }
+
+    if ( $IgnoriereAktuelle && $abfragen == 1 ) {
+        push @Ignoriere, map +{ nr => $_->nr }, @am_zug;
+        next;
+    }
+
     @am_zug = grep !spiel_filter( $_, @Ignoriere ), @am_zug;
 
     my $am_zug = 'Du bist ';
@@ -194,6 +203,9 @@ um bestimmte Spiele, bei denen Du (möglicherweise) am Zug bist, zu ignorieren.
 Ein Spiel wird dabei ignoriert, wenn alle im Rahmen I<eines> Aufrufs dieser
 Option übergebenen Attribute übereinstimmen.
 Zu den möglichen Attributen siehe L<WWW::Brettspielnetz::Spiel>.
+
+Sonderfall: Eine leere Zeichenkette als Argument führt dazu, dass diejenigen
+Spiele ignoriert werden, bei denen Du beim Start des Programms am Zug bist.
 
 =item -einzeln
 
